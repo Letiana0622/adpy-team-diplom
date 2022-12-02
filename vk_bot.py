@@ -3,6 +3,7 @@ import vk_api
 from vk_api.longpoll import VkLongPoll, VkEventType
 from token_bot_vk import bot_token
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
+from vk_find_users import VkBotFunc
 
 
 token = bot_token
@@ -30,6 +31,7 @@ def keyboard_start():
     keyboard_main = VkKeyboard(one_time=True)
     keyboard_main.add_button('Hi', VkKeyboardColor.PRIMARY)
     keyboard_main.add_button('Photo', VkKeyboardColor.PRIMARY)
+    keyboard_main.add_button('Find', VkKeyboardColor.PRIMARY)
     keyboard_main.add_button('Bye', VkKeyboardColor.PRIMARY)
     return keyboard_main
 
@@ -95,5 +97,8 @@ for event in longpoll.listen():
                 send_photo(event.user_id, list_photo[correct_photo], keyboard_photo_vk())
             elif request == 'favorite':
                 write_msg(event.user_id, 'Эта функция еще не реализованана')
+            elif request == 'find':
+                master_user = VkBotFunc(token, event.user_id)
+                write_msg(event.user_id, f'Your data {master_user.user_info()}')
             else:
                 write_msg(event.user_id, 'Не поняла вашего ответа. Вот список команд', keyboard_start())
