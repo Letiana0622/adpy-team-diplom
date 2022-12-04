@@ -1,11 +1,11 @@
 def main():
-
     import requests
     import re
     import random
-    from token_bot_vk import bot_token
+    from token_bot_vk import bot_token, bot_token_v
 
-    token = bot_token
+    token = bot_token_v
+
     class VkDownloader:
 
         def __init__(self, token):
@@ -24,13 +24,43 @@ def main():
             for user_id in list_ids:
                 url = 'https://api.vk.com/method/users.get'
                 params = {'user_ids': user_id,
-                      'access_token': token,
-                      'v': '5.131',
-                      'fields': 'id, home_town, sex, bdate'
-                      }
+                          'access_token': token,
+                          'v': '5.131',
+                          'fields': 'id, home_town, sex, bdate'
+                          }
                 res = requests.get(url=url, params=params).json()
                 list_users_data.append(res)
-            return(list_users_data)
+            return (list_users_data)
+
+        def get_photos(self, selected_data, offset=0):
+            photos_data = []
+            for user in selected_data:
+                user_id = user['response'][0]['id']  # User id is to be taken from DB when DB is ready
+                url = 'https://api.vk.com/method/photos.get'
+                params = {'owner_id': user_id,
+                          'album_id': 'profile',
+                          'access_token': token,
+                          'v': '5.131',
+                          'extended': '1',
+                          # 'count': count,
+                          'offset': offset
+                          }
+                res = requests.get(url=url, params=params).json()
+                photos_data.append(res)
+            selected_photos = []
+            for response in photos_data:
+                temp_dict = {}
+                temp_list = []
+                user_id = response['response']['items'][0]['owner_id']
+                photo_url = response['response']['items'][0]['sizes'][0]['url']
+                # first photo in album as likes are available per album not per photo
+                photo_likes = response['response']['items'][0]['likes']['count']
+                # likes are available to get only at album level// selction of best photos to be done via select requests to DB
+                temp_list.append(photo_url)
+                temp_list.append(photo_likes)
+                temp_dict[user_id] = temp_list
+                selected_photos.append(temp_dict)
+            return selected_photos  # to write response in DB when it is ready
 
     def select_users(users_data, sex_to_search, home_town_to_search, bdate_to_search_from, bdate_to_search_to):
         list_users_selection = []
@@ -40,29 +70,31 @@ def main():
             if key1 in user['response'][0].keys() and key2 in user['response'][0].keys():
                 bdate_check = user['response'][0]['bdate']
                 if len(bdate_check) == 9:
-                    bdate_check_year = int(re.sub(r'.', '', bdate_check, count = 5))
+                    bdate_check_year = int(re.sub(r'.', '', bdate_check, count=5))
                     if bdate_check_year >= bdate_to_search_from and bdate_check_year <= bdate_to_search_to:
                         user_sex = user['response'][0]['sex']
                         user_home_town = user['response'][0]['home_town']
                         if user_sex == sex_to_search and user_home_town == home_town_to_search:
                             list_users_selection.append(user)
-        return(list_users_selection)
+        return (list_users_selection)
 
     sex_to_search = 1
     home_town_to_search = 'Москва'
     bdate_to_search = 1999
-
     bdate_to_search_from = bdate_to_search - 5
     bdate_to_search_to = bdate_to_search + 5
+
     downloader = VkDownloader(token)
+
     users_data = downloader.get_users()
-    users_selected = select_users(users_data, sex_to_search, home_town_to_search, bdate_to_search_from, bdate_to_search_to)
-    # while len(users_selected) <= 4:
-    #     users_data_ = downloader.get_users()
-    #     users_selected_ = select_users(users_data, sex_to_search, home_town_to_search, bdate_to_search_from,
-    #                                   bdate_to_search_to)
-    #     users_selected.append(users_selected_)
+
+    users_selected = select_users(users_data, sex_to_search, home_town_to_search, bdate_to_search_from,
+                                  bdate_to_search_to)
     print(users_selected)
+
+    photos_data = downloader.get_photos(users_selected)
+    print(photos_data)
+
 
 if __name__ == '__main__':
     main()
