@@ -28,7 +28,7 @@ def photo_switch(count_photo, number_global):
 
 
 def keyboard_start():
-    keyboard_main = VkKeyboard(one_time=True)
+    keyboard_main = VkKeyboard()
     keyboard_main.add_button('Hi', VkKeyboardColor.PRIMARY)
     keyboard_main.add_button('Photo', VkKeyboardColor.PRIMARY)
     keyboard_main.add_button('Find', VkKeyboardColor.PRIMARY)
@@ -72,6 +72,18 @@ def send_photo(user_id, url_photo, keyboard=None):
     vk.method('messages.send', parameter)
 
 
+def data_research():
+    master_user = VkBotFunc(token, event.user_id)
+    find_params = master_user.user_info()
+    users_data = master_user.get_users()
+    sex_to_search = find_params['response'][0]['sex']
+    home_town_to_search = find_params['response'][0]['city']['id']
+    bdate_main = find_params['response'][0]['bdate'].split('.')
+    bdate_to_search = bdate_main[2]
+    users_selected = master_user.select_users(users_data, sex_to_search, home_town_to_search, int(bdate_to_search))
+    return users_selected
+
+
 for event in longpoll.listen():
     if event.type == VkEventType.MESSAGE_NEW:
 
@@ -98,7 +110,7 @@ for event in longpoll.listen():
             elif request == 'favorite':
                 write_msg(event.user_id, 'Эта функция еще не реализованана')
             elif request == 'find':
-                master_user = VkBotFunc(token, event.user_id)
-                write_msg(event.user_id, f'Your data {master_user.user_info()}')
+                persons = data_research()
+                write_msg(event.user_id, f'Your data {persons}')
             else:
                 write_msg(event.user_id, 'Не поняла вашего ответа. Вот список команд', keyboard_start())
