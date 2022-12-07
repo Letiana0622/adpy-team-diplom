@@ -56,6 +56,15 @@ def main():
                 # first photo in album as likes are available per album not per photo
                 photo_likes = response['response']['items'][0]['likes']['count']
                 # likes are available to get only at album level// selction of best photos to be done via select requests to DB
+                with psycopg2.connect(database="vk_bot_db", user="postgres", password="postgres") as conn:
+                    with conn.cursor() as cur:
+                        cur.execute("""
+                            INSERT INTO vk_photo(vk_user_id, photo_link, photo_likes) VALUES
+                            (%s,%s,%s)
+                            RETURNING photo_id, vk_user_id, photo_link, photo_likes;
+                            """, (user_id, photo_url, photo_likes,))
+                        conn.commit()
+                conn.close()
                 temp_list.append(photo_url)
                 temp_list.append(photo_likes)
                 temp_dict[user_id] = temp_list
@@ -118,6 +127,18 @@ def main():
                                     conn.commit()
                             conn.close()
         return (list_users_selection)
+
+    def favorite_to_db():
+        user_id = 'favorite_id' #необходимо связать с кнопкой выбора пользователя -> по выбору фото опрелелить user_id и запустить функцию записи в базу
+        with psycopg2.connect(database="vk_bot_db", user="postgres", password="postgres") as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO vk_favorite(vk_user_id) VALUES
+                    (%s)
+                    RETURNING favorite_id, vk_user_id;
+                    """, (user_id,))
+                conn.commit()
+        conn.close()
 
     sex_to_search = 1
     home_town_to_search = 'Москва'
