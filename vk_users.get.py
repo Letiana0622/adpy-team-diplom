@@ -140,6 +140,32 @@ def main():
                 conn.commit()
         conn.close()
 
+    def select_user(conn, user_id):
+        cur.execute("""
+            SELECT vk_user_id FROM vk_selected
+            WHERE
+            (user_id = %s);
+            """, (user_id,))
+        print(cur.fetchall())
+
+    def select_photos(conn, user_id_show):
+        cur.execute("""
+                        SELECT vk_user_id, photo_link, photo_likes FROM vk_photo
+                        WHERE
+                              (vk_user_id = %s)
+                        ORDER BY photo_likes DESC
+                        LIMIT 3;
+                        """, (user_id_show,))
+        print(cur.fetchall())
+
+    with psycopg2.connect(database="vk_bot_db", user="postgres", password="postgres") as conn:
+        with conn.cursor() as cur:
+            user_id = 1 # увеличивать порядок при нажатии кнопки next
+            user_id_show = select_user(conn,user_id)
+            photo_links_show = select_photos(user_id_show)
+            print(photo_links_show) # photo_links_show необходимо передать боту
+    conn.close()
+
     sex_to_search = 1
     home_town_to_search = 'Москва'
     bdate_to_search = 1999
