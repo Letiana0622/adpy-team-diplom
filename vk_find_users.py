@@ -1,5 +1,6 @@
 import requests
 import time
+import psycopg2
 
 
 class VkBotFunc:
@@ -50,6 +51,46 @@ class VkBotFunc:
                         user_home_town = users_data['city']['id']
                         if user_sex == sex_to_search and user_home_town == home_town_to_search:
                             list_users_selection.append(users_data)
+                            vk_user_id = users_data['id']
+                            with psycopg2.connect(database="vk_bot_db", user="postgres", password="postgres") as conn:
+                                with conn.cursor() as cur:
+                                    # удаление таблиц| когда уже созданы
+                                    cur.execute("""
+                                                                DROP TABLE vk_photo;
+                                                                DROP TABLE vk_favorite;
+                                                                DROP TABLE vk_selected;
+                                                                """)
+
+                                    # создание таблиц
+                                    cur.execute("""
+                                                                CREATE TABLE IF NOT EXISTS vk_selected(
+                                                                    user_id SERIAL PRIMARY KEY,
+                                                                    vk_user_id INTEGER NOT NULL UNIQUE
+                                                                );
+                                                                """)
+                                    cur.execute("""
+                                                                CREATE TABLE IF NOT EXISTS vk_photo(
+                                                                    photo_id SERIAL PRIMARY KEY,
+                                                                    vk_user_id INTEGER NOT NULL REFERENCES vk_selected(vk_user_id),
+                                                                    photo_link TEXT NOT NULL,
+                                                                    photo_likes INTEGER NOT NULL
+                                                                 );
+                                                                """)
+
+                                    cur.execute("""
+                                                                CREATE TABLE IF NOT EXISTS vk_favorite(
+                                                                    favorite_id SERIAL PRIMARY KEY,
+                                                                    vk_user_id INTEGER NOT NULL REFERENCES vk_selected(vk_user_id)
+                                                                 );
+                                                                """)
+                                    conn.commit()  # фиксируем в БД
+                                    cur.execute("""
+                                                                    INSERT INTO vk_selected(vk_user_id) VALUES
+                                                                    (%s)
+                                                                    RETURNING user_id, vk_user_id;
+                                                                    """, (vk_user_id,))
+                                    conn.commit()
+                            conn.close()
         return list_users_selection
 
     def get_photos(self, selected_data, offset=0):
@@ -66,6 +107,7 @@ class VkBotFunc:
                       'offset': offset
                       }
             res = requests.get(url=url, params=params).json()
+            time.sleep(0.2)
             photos_data.append(res)
         selected_photos = []
         for response in photos_data:
@@ -74,7 +116,9 @@ class VkBotFunc:
                     temp_dict = {}
                     temp_list = []
                     user_id = response['response']['items'][0]['owner_id']
-                    photo_url = response['response']['items'][0]['sizes'][0]['url']
+                    for correct_size in response['response']['items'][0]['sizes']:
+                        if correct_size['type'] == 'x':
+                            photo_url = correct_size['url']
                     # first photo in album as likes are available per album not per photo
                     photo_likes = response['response']['items'][0]['likes']['count']
                     # likes are available to get only at album level// selction of best photos to be done via select requests to DB
