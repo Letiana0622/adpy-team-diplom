@@ -8,6 +8,7 @@ import requests
 from io import BytesIO
 from vk_api.upload import VkUpload
 import psycopg2
+from data_base import create_db, add_user, add_photo, add_favorite
 
 
 token = bot_token
@@ -108,7 +109,7 @@ def find_user_info(correct_user_id):
     response = requests.get(url_get, params)
     return response.json()
 
-
+add_favorite(favorite_id)
 # def favorite_to_db(favorite_id):
 #     user_id = favorite_id
 #     with psycopg2.connect(database="vk_bot_db", user="postgres", password="postgres") as conn:

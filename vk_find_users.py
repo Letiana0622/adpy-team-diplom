@@ -1,7 +1,7 @@
 import requests
 import time
 import psycopg2
-import data_base
+from data_base import create_db, add_user, add_photo, add_favorite
 
 class VkBotFunc:
 
@@ -34,6 +34,7 @@ class VkBotFunc:
         list_users_selection = []
         bdate_to_search_from = bdate_to_search - 5
         bdate_to_search_to = bdate_to_search + 5
+        create_db()
         # with psycopg2.connect(database="vk_bot_db", user="postgres", password="postgres") as conn:
         #     with conn.cursor() as cur:
         #         # удаление таблиц| когда уже созданы
@@ -84,6 +85,7 @@ class VkBotFunc:
                         if user_sex == sex_to_search and user_home_town == home_town_to_search:
                             list_users_selection.append(users_data)
                             vk_user_id = users_data['id']
+                            add_user(vk_user_id)
                             # with psycopg2.connect(database="vk_bot_db", user="postgres", password="postgres") as conn:
                             #     with conn.cursor() as cur:
                             #         cur.execute("""
@@ -123,6 +125,7 @@ class VkBotFunc:
                     for correct_size in response['response']['items'][0]['sizes']:
                         if correct_size['type'] == 'x':
                             photo_url = correct_size['url']
+                            add_photo(user_id, photo_url, photo_likes)
                             # with psycopg2.connect(database="vk_bot_db", user="postgres", password="postgres") as conn:
                             #     with conn.cursor() as cur:
                             #         cur.execute("""
