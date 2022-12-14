@@ -109,17 +109,17 @@ def find_user_info(correct_user_id):
     return response.json()
 
 
-def favorite_to_db(favorite_id):
-    user_id = favorite_id
-    with psycopg2.connect(database="vk_bot_db", user="postgres", password="postgres") as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                INSERT INTO vk_favorite(vk_user_id) VALUES
-                (%s)
-                RETURNING favorite_id, vk_user_id;
-                """, (user_id,))
-            conn.commit()
-    conn.close()
+# def favorite_to_db(favorite_id):
+#     user_id = favorite_id
+#     with psycopg2.connect(database="vk_bot_db", user="postgres", password="postgres") as conn:
+#         with conn.cursor() as cur:
+#             cur.execute("""
+#                 INSERT INTO vk_favorite(vk_user_id) VALUES
+#                 (%s)
+#                 RETURNING favorite_id, vk_user_id;
+#                 """, (user_id,))
+#             conn.commit()
+#     conn.close()
 
 
 for event in longpoll.listen():
