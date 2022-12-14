@@ -109,7 +109,6 @@ def find_user_info(correct_user_id):
     response = requests.get(url_get, params)
     return response.json()
 
-add_favorite(favorite_id)
 # def favorite_to_db(favorite_id):
 #     user_id = favorite_id
 #     with psycopg2.connect(database="vk_bot_db", user="postgres", password="postgres") as conn:
@@ -156,7 +155,7 @@ for event in longpoll.listen():
                 new_photo = photo_upload(persons[correct_photo]['user_photo_data'][0])
                 send_photo(event.user_id, new_photo[0], new_photo[1], new_photo[2], keyboard_photo_vk())
             elif request == 'favorite':
-                favorite_to_db(persons[correct_photo]['user_id'])
+                add_favorite(persons[correct_photo]['user_id'])
                 write_msg(event.user_id, 'Успешно добавлено в избранное')
             elif request == 'find':
                 persons = data_research()
