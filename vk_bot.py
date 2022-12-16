@@ -7,7 +7,6 @@ from vk_find_users import VkBotFunc
 import requests
 from io import BytesIO
 from vk_api.upload import VkUpload
-import psycopg2
 from data_base import create_db, add_user, add_photo, add_favorite
 
 
@@ -84,9 +83,8 @@ def data_research():
     home_town_to_search = find_params['response'][0]['city']['id']
     bdate_main = find_params['response'][0]['bdate'].split('.')
     bdate_to_search = bdate_main[2]
-    users_data = master_user.get_users(sex_to_search, home_town_to_search)
-    users_selected = master_user.select_users(users_data, sex_to_search, home_town_to_search, int(bdate_to_search))
-    photos_data = master_user.get_photos(users_selected)
+    users_data = master_user.get_users(sex_to_search, home_town_to_search, int(bdate_to_search))
+    photos_data = master_user.get_photos(users_data)
     return photos_data
 
 
