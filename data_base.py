@@ -72,3 +72,37 @@ def add_favorite(favorite_id):
                         """, (user_id,))
             conn.commit()
     conn.close()
+
+def select_photo(number_photo):
+    with psycopg2.connect(database=database, user=user, password=password) as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT photo_link FROM vk_photo
+                        WHERE photo_id = %s;
+                        """, (number_photo,))
+            photo_data = cur.fetchall()
+    conn.close()
+    return photo_data
+
+
+def select_user(number_photo):
+    with psycopg2.connect(database=database, user=user, password=password) as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT vk_user_id FROM vk_selected
+                        WHERE user_id = %s;
+                        """, (number_photo,))
+            user_data = cur.fetchall()
+    conn.close()
+    return user_data
+
+
+def select_user_count():
+    with psycopg2.connect(database=database, user=user, password=password) as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT * FROM vk_photo;
+                        """)
+            user_data = cur.fetchall()
+    conn.close()
+    return user_data

@@ -1,7 +1,7 @@
 import requests
 import time
 import datetime
-from data_base import create_db, add_user, add_photo, add_favorite
+from data_base import create_db, add_user, add_photo
 
 
 class VkBotFunc:
@@ -23,8 +23,9 @@ class VkBotFunc:
         time.sleep(0.33)
         return response.json()
 
-    def get_users(self, sex_main, home_town_to_search, bdate_to_search):
+    def get_users(self, sex_main, home_town_to_search, bdate_to_search, offset=0):
         create_db()
+        photos_data = []
         list_users_data = []
         list_users_selection = []
         if sex_main == 2:
@@ -48,30 +49,21 @@ class VkBotFunc:
             list_users_selection.append(users_data)
             vk_user_id = users_data['id']
             add_user(vk_user_id)
-        return list_users_selection
-
-    def get_photos(self, selected_data, offset=0):
-        photos_data = []
-        for user in selected_data:
-            user_id = user['id']  # User id is to be taken from DB when DB is ready
+            user_id = users_data['id']  # User id is to be taken from DB when DB is ready
             url = 'https://api.vk.com/method/photos.get'
             params = {'owner_id': user_id,
                       'album_id': 'profile',
                       'access_token': self.token_user,
                       'v': '5.131',
                       'extended': '1',
-                      # 'count': count,
                       'offset': offset
                       }
             res = requests.get(url=url, params=params).json()
             time.sleep(0.2)
             photos_data.append(res)
-        selected_photos = []
         for response in photos_data:
             try:
                 if response['response']['count'] != 0:
-                    temp_dict = {}
-                    temp_list = []
                     user_id = response['response']['items'][0]['owner_id']
                     # first photo in album as likes are available per album not per photo
                     photo_likes = response['response']['items'][0]['likes']['count']
@@ -79,13 +71,5 @@ class VkBotFunc:
                         if correct_size['type'] == 'x':
                             photo_url = correct_size['url']
                             add_photo(user_id, photo_url, photo_likes)
-                    # likes are available to get only at album level// selction of best photos to be done via select requests to DB
-                    temp_list.append(photo_url)
-                    temp_list.append(photo_likes)
-                    temp_dict['user_id'] = user_id
-                    temp_dict['user_photo_data'] = temp_list
-                    selected_photos.append(temp_dict)
             except KeyError:
                 pass
-        return selected_photos  # to write response in DB when it is ready
-

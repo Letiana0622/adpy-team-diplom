@@ -7,7 +7,7 @@ from vk_find_users import VkBotFunc
 import requests
 from io import BytesIO
 from vk_api.upload import VkUpload
-from data_base import create_db, add_user, add_photo, add_favorite
+from data_base import add_favorite, select_photo, select_user, select_user_count
 
 
 token = bot_token
@@ -16,16 +16,17 @@ vk = vk_api.VkApi(token=token)
 longpoll = VkLongPoll(vk)
 upload = VkUpload(vk)
 
-number_photo = 0
+number_photo = 1
 
 
 def photo_switch(count_photo, number_global):
-    if (count_photo <= len(persons) - 1) and (count_photo >= 0):
+    persons_count = select_user_count()
+    if (count_photo <= len(persons_count) - 1) and (count_photo >= 0):
         correct_number_photo = count_photo
     elif count_photo < 0:
-        correct_number_photo = len(persons) - 1
-        number_global = len(persons) - 1
-    elif count_photo > len(persons) - 1:
+        correct_number_photo = len(persons_count) - 1
+        number_global = len(persons_count) - 1
+    elif count_photo > len(persons_count) - 1:
         correct_number_photo = 0
         number_global = 0
     return correct_number_photo, number_global
@@ -83,9 +84,7 @@ def data_research():
     home_town_to_search = find_params['response'][0]['city']['id']
     bdate_main = find_params['response'][0]['bdate'].split('.')
     bdate_to_search = bdate_main[2]
-    users_data = master_user.get_users(sex_to_search, home_town_to_search, int(bdate_to_search))
-    photos_data = master_user.get_photos(users_data)
-    return photos_data
+    master_user.get_users(sex_to_search, home_town_to_search, int(bdate_to_search))
 
 
 def photo_upload(url):
@@ -107,18 +106,6 @@ def find_user_info(correct_user_id):
     response = requests.get(url_get, params)
     return response.json()
 
-# def favorite_to_db(favorite_id):
-#     user_id = favorite_id
-#     with psycopg2.connect(database="vk_bot_db", user="postgres", password="postgres") as conn:
-#         with conn.cursor() as cur:
-#             cur.execute("""
-#                 INSERT INTO vk_favorite(vk_user_id) VALUES
-#                 (%s)
-#                 RETURNING favorite_id, vk_user_id;
-#                 """, (user_id,))
-#             conn.commit()
-#     conn.close()
-
 
 for event in longpoll.listen():
     if event.type == VkEventType.MESSAGE_NEW:
@@ -131,32 +118,37 @@ for event in longpoll.listen():
             elif request == 'bye':
                 write_msg(event.user_id, 'Пока((')
             elif request == 'photo':
+                start_photo = 1
                 correct_photo = photo_switch(number_photo, number_photo)[0]
-                nickname = find_user_info(persons[correct_photo]['user_id'])
-                new_photo = photo_upload(persons[correct_photo]['user_photo_data'][0])
+                number_photo = photo_switch(number_photo, number_photo)[1]
+                person_id = select_user(start_photo)
+                nickname = find_user_info(person_id)
                 write_msg(event.user_id, f'{nickname["response"][0]["first_name"]} {nickname["response"][0]["last_name"]}')
+                new_photo = photo_upload(select_photo(start_photo)[0][0])
                 send_photo(event.user_id, new_photo[0], new_photo[1], new_photo[2], keyboard_photo_vk())
             elif request == 'next':
                 number_photo += 1
                 correct_photo = photo_switch(number_photo, number_photo)[0]
                 number_photo = photo_switch(number_photo, number_photo)[1]
-                nickname = find_user_info(persons[correct_photo]['user_id'])
+                person_id = select_user(number_photo)
+                nickname = find_user_info(person_id)
                 write_msg(event.user_id, f'{nickname["response"][0]["first_name"]} {nickname["response"][0]["last_name"]}')
-                new_photo = photo_upload(persons[correct_photo]['user_photo_data'][0])
+                new_photo = photo_upload(select_photo(number_photo)[0][0])
                 send_photo(event.user_id, new_photo[0], new_photo[1], new_photo[2], keyboard_photo_vk())
             elif request == 'back':
                 number_photo -= 1
                 correct_photo = photo_switch(number_photo, number_photo)[0]
                 number_photo = photo_switch(number_photo, number_photo)[1]
-                nickname = find_user_info(persons[correct_photo]['user_id'])
+                person_id = select_user(number_photo)
+                nickname = find_user_info(person_id)
                 write_msg(event.user_id, f'{nickname["response"][0]["first_name"]} {nickname["response"][0]["last_name"]}')
-                new_photo = photo_upload(persons[correct_photo]['user_photo_data'][0])
+                new_photo = photo_upload(select_photo(number_photo)[0][0])
                 send_photo(event.user_id, new_photo[0], new_photo[1], new_photo[2], keyboard_photo_vk())
             elif request == 'favorite':
                 add_favorite(persons[correct_photo]['user_id'])
                 write_msg(event.user_id, 'Успешно добавлено в избранное')
             elif request == 'find':
-                persons = data_research()
+                data_research()
                 write_msg(event.user_id, 'Нашел подходящих людей')
             else:
                 write_msg(event.user_id, 'Не поняла вашего ответа. Вот список команд', keyboard_start())
