@@ -145,7 +145,7 @@ for event in longpoll.listen():
                 new_photo = photo_upload(select_photo(number_photo)[0][0])
                 send_photo(event.user_id, new_photo[0], new_photo[1], new_photo[2], keyboard_photo_vk())
             elif request == 'favorite':
-                add_favorite(persons[correct_photo]['user_id'])
+                add_favorite(person_id)
                 write_msg(event.user_id, 'Успешно добавлено в избранное')
             elif request == 'find':
                 data_research()

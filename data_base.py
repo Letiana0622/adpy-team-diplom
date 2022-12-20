@@ -30,7 +30,7 @@ def create_db():
             cur.execute("""
                         CREATE TABLE IF NOT EXISTS vk_favorite(
                         favorite_id SERIAL PRIMARY KEY,
-                        vk_user_id INTEGER NOT NULL REFERENCES vk_selected(vk_user_id)
+                        vk_user_id VARCHAR NOT NULL
                         );
                         """)
             conn.commit()
