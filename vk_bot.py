@@ -101,7 +101,7 @@ def photo_upload(url):
 
 
 def find_user_info(correct_user_id):
-    params = {'access_token': token, 'v': '5.131', 'user_ids': correct_user_id}
+    params = {'access_token': token, 'v': '5.131', 'user_ids': correct_user_id, 'fields': 'domain'}
     url_get = 'https://api.vk.com/method/users.get'
     response = requests.get(url_get, params)
     return response.json()
@@ -124,6 +124,7 @@ for event in longpoll.listen():
                 person_id = select_user(start_photo)
                 nickname = find_user_info(person_id)
                 write_msg(event.user_id, f'{nickname["response"][0]["first_name"]} {nickname["response"][0]["last_name"]}')
+                write_msg(event.user_id, f'https://vk.com/{nickname["response"][0]["domain"]}')
                 new_photo = photo_upload(select_photo(start_photo)[0][0])
                 send_photo(event.user_id, new_photo[0], new_photo[1], new_photo[2], keyboard_photo_vk())
             elif request == 'next':
@@ -133,6 +134,7 @@ for event in longpoll.listen():
                 person_id = select_user(number_photo)
                 nickname = find_user_info(person_id)
                 write_msg(event.user_id, f'{nickname["response"][0]["first_name"]} {nickname["response"][0]["last_name"]}')
+                write_msg(event.user_id, f'https://vk.com/{nickname["response"][0]["domain"]}')
                 new_photo = photo_upload(select_photo(number_photo)[0][0])
                 send_photo(event.user_id, new_photo[0], new_photo[1], new_photo[2], keyboard_photo_vk())
             elif request == 'back':
@@ -142,6 +144,7 @@ for event in longpoll.listen():
                 person_id = select_user(number_photo)
                 nickname = find_user_info(person_id)
                 write_msg(event.user_id, f'{nickname["response"][0]["first_name"]} {nickname["response"][0]["last_name"]}')
+                write_msg(event.user_id, f'https://vk.com/{nickname["response"][0]["domain"]}')
                 new_photo = photo_upload(select_photo(number_photo)[0][0])
                 send_photo(event.user_id, new_photo[0], new_photo[1], new_photo[2], keyboard_photo_vk())
             elif request == 'favorite':
