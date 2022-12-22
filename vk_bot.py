@@ -21,14 +21,14 @@ number_photo = 1
 
 def photo_switch(count_photo, number_global):
     persons_count = select_user_count()
-    if (count_photo <= len(persons_count) - 1) and (count_photo >= 0):
+    if (count_photo <= len(persons_count)) and (count_photo > 0):
         correct_number_photo = count_photo
-    elif count_photo < 0:
-        correct_number_photo = len(persons_count) - 1
-        number_global = len(persons_count) - 1
-    elif count_photo > len(persons_count) - 1:
-        correct_number_photo = 0
-        number_global = 0
+    elif count_photo <= 1:
+        correct_number_photo = len(persons_count)
+        number_global = len(persons_count)
+    elif count_photo > len(persons_count):
+        correct_number_photo = 1
+        number_global = 1
     return correct_number_photo, number_global
 
 
