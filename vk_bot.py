@@ -7,7 +7,7 @@ from vk_find_users import VkBotFunc
 import requests
 from io import BytesIO
 from vk_api.upload import VkUpload
-from data_base import add_favorite, select_photo, select_user, select_user_count
+from data_base import add_favorite, select_photo, select_user, select_user_count, select_favorite_user, select_user_favorite_count, delete_favorite
 
 
 token = bot_token
@@ -17,10 +17,24 @@ longpoll = VkLongPoll(vk)
 upload = VkUpload(vk)
 
 number_photo = 1
+number_favorite_photo = 1
 
 
 def photo_switch(count_photo, number_global):
     persons_count = select_user_count()
+    if (count_photo <= len(persons_count)) and (count_photo > 0):
+        correct_number_photo = count_photo
+    elif count_photo <= 1:
+        correct_number_photo = len(persons_count)
+        number_global = len(persons_count)
+    elif count_photo > len(persons_count):
+        correct_number_photo = 1
+        number_global = 1
+    return correct_number_photo, number_global
+
+
+def favorite_photo_switch(count_photo, number_global):
+    persons_count = select_user_favorite_count()
     if (count_photo <= len(persons_count)) and (count_photo > 0):
         correct_number_photo = count_photo
     elif count_photo <= 1:
@@ -37,16 +51,25 @@ def keyboard_start():
     keyboard_main.add_button('Hi', VkKeyboardColor.PRIMARY)
     keyboard_main.add_button('Photo', VkKeyboardColor.PRIMARY)
     keyboard_main.add_button('Find', VkKeyboardColor.PRIMARY)
-    keyboard_main.add_button('Bye', VkKeyboardColor.PRIMARY)
+    keyboard_main.add_button('Favorite', VkKeyboardColor.PRIMARY)
+    keyboard_main.add_button('Continue', VkKeyboardColor.PRIMARY)
     return keyboard_main
 
 
 def keyboard_photo_vk():
     keyboard_photo = VkKeyboard(inline=True)
     keyboard_photo.add_button('Back', VkKeyboardColor.PRIMARY)
-    keyboard_photo.add_button('Favorite', VkKeyboardColor.PRIMARY)
+    keyboard_photo.add_button('Like', VkKeyboardColor.PRIMARY)
     keyboard_photo.add_button('Next', VkKeyboardColor.PRIMARY)
     return keyboard_photo
+
+
+def keyboard_favorite_photo_vk():
+    keyboard_favorite_photo = VkKeyboard(inline=True)
+    keyboard_favorite_photo.add_button('Back favorite', VkKeyboardColor.PRIMARY)
+    keyboard_favorite_photo.add_button('Delete favorite', VkKeyboardColor.PRIMARY)
+    keyboard_favorite_photo.add_button('Next favorite', VkKeyboardColor.PRIMARY)
+    return keyboard_favorite_photo
 
 
 def write_msg(user_id, message, keyboard=None):
@@ -118,40 +141,73 @@ for event in longpoll.listen():
             elif request == 'bye':
                 write_msg(event.user_id, 'Пока((')
             elif request == 'photo':
+                data_research()
                 start_photo = 1
-                correct_photo = photo_switch(number_photo, number_photo)[0]
-                number_photo = photo_switch(number_photo, number_photo)[1]
+                number_photo = photo_switch(number_photo, number_photo)[0]
                 person_id = select_user(start_photo)
                 nickname = find_user_info(person_id)
                 write_msg(event.user_id, f'{nickname["response"][0]["first_name"]} {nickname["response"][0]["last_name"]}')
                 write_msg(event.user_id, f'https://vk.com/{nickname["response"][0]["domain"]}')
-                new_photo = photo_upload(select_photo(start_photo)[0][0])
+                new_photo = photo_upload(select_photo(person_id[0][0])[0][0])
+                send_photo(event.user_id, new_photo[0], new_photo[1], new_photo[2], keyboard_photo_vk())
+            elif request == 'continue':
+                number_photo = photo_switch(number_photo, number_photo)[0]
+                person_id = select_user(number_photo)
+                nickname = find_user_info(person_id)
+                write_msg(event.user_id, f'{nickname["response"][0]["first_name"]} {nickname["response"][0]["last_name"]}')
+                write_msg(event.user_id, f'https://vk.com/{nickname["response"][0]["domain"]}')
+                new_photo = photo_upload(select_photo(person_id[0][0])[0][0])
                 send_photo(event.user_id, new_photo[0], new_photo[1], new_photo[2], keyboard_photo_vk())
             elif request == 'next':
                 number_photo += 1
-                correct_photo = photo_switch(number_photo, number_photo)[0]
-                number_photo = photo_switch(number_photo, number_photo)[1]
+                number_photo = photo_switch(number_photo, number_photo)[0]
                 person_id = select_user(number_photo)
                 nickname = find_user_info(person_id)
                 write_msg(event.user_id, f'{nickname["response"][0]["first_name"]} {nickname["response"][0]["last_name"]}')
                 write_msg(event.user_id, f'https://vk.com/{nickname["response"][0]["domain"]}')
-                new_photo = photo_upload(select_photo(number_photo)[0][0])
+                new_photo = photo_upload(select_photo(person_id[0][0])[0][0])
                 send_photo(event.user_id, new_photo[0], new_photo[1], new_photo[2], keyboard_photo_vk())
             elif request == 'back':
                 number_photo -= 1
-                correct_photo = photo_switch(number_photo, number_photo)[0]
-                number_photo = photo_switch(number_photo, number_photo)[1]
+                number_photo = photo_switch(number_photo, number_photo)[0]
                 person_id = select_user(number_photo)
                 nickname = find_user_info(person_id)
                 write_msg(event.user_id, f'{nickname["response"][0]["first_name"]} {nickname["response"][0]["last_name"]}')
                 write_msg(event.user_id, f'https://vk.com/{nickname["response"][0]["domain"]}')
-                new_photo = photo_upload(select_photo(number_photo)[0][0])
+                new_photo = photo_upload(select_photo(person_id[0][0])[0][0])
                 send_photo(event.user_id, new_photo[0], new_photo[1], new_photo[2], keyboard_photo_vk())
-            elif request == 'favorite':
-                add_favorite(person_id)
+            elif request == 'like':
+                add_favorite(event.user_id, person_id[0][0], select_photo(person_id[0][0])[0][0])
                 write_msg(event.user_id, 'Успешно добавлено в избранное')
-            elif request == 'find':
-                data_research()
-                write_msg(event.user_id, 'Нашел подходящих людей')
+            elif request == 'favorite':
+                start_favorite_photo = 1
+                number_favorite_photo = favorite_photo_switch(number_favorite_photo, number_favorite_photo)[0]
+                person_data = select_favorite_user(start_favorite_photo)
+                nickname = find_user_info(person_data[0][0])
+                write_msg(event.user_id, f'{nickname["response"][0]["first_name"]} {nickname["response"][0]["last_name"]}')
+                write_msg(event.user_id, f'https://vk.com/{nickname["response"][0]["domain"]}')
+                new_photo = photo_upload(person_data[0][1])
+                send_photo(event.user_id, new_photo[0], new_photo[1], new_photo[2], keyboard_favorite_photo_vk())
+            elif request == 'next favorite':
+                number_favorite_photo += 1
+                number_favorite_photo = favorite_photo_switch(number_favorite_photo, number_favorite_photo)[0]
+                person_data = select_favorite_user(number_favorite_photo)
+                nickname = find_user_info(person_data[0][0])
+                write_msg(event.user_id, f'{nickname["response"][0]["first_name"]} {nickname["response"][0]["last_name"]}')
+                write_msg(event.user_id, f'https://vk.com/{nickname["response"][0]["domain"]}')
+                new_photo = photo_upload(person_data[0][1])
+                send_photo(event.user_id, new_photo[0], new_photo[1], new_photo[2], keyboard_favorite_photo_vk())
+            elif request == 'back favorite':
+                number_favorite_photo -= 1
+                number_favorite_photo = favorite_photo_switch(number_favorite_photo, number_favorite_photo)[0]
+                person_data = select_favorite_user(number_favorite_photo)
+                nickname = find_user_info(person_data[0][0])
+                write_msg(event.user_id, f'{nickname["response"][0]["first_name"]} {nickname["response"][0]["last_name"]}')
+                write_msg(event.user_id, f'https://vk.com/{nickname["response"][0]["domain"]}')
+                new_photo = photo_upload(person_data[0][1])
+                send_photo(event.user_id, new_photo[0], new_photo[1], new_photo[2], keyboard_favorite_photo_vk())
+            elif request == 'delete favorite':
+                delete_favorite(number_favorite_photo)
+                write_msg(event.user_id, 'Успешно удаленно из избранного')
             else:
                 write_msg(event.user_id, 'Не поняла вашего ответа. Вот список команд', keyboard_start())

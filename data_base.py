@@ -30,7 +30,9 @@ def create_db():
             cur.execute("""
                         CREATE TABLE IF NOT EXISTS vk_favorite(
                         favorite_id SERIAL PRIMARY KEY,
-                        vk_user_id VARCHAR NOT NULL
+                        vk_user_main VARCHAR NOT NULL,
+                        vk_user_id VARCHAR NOT NULL,
+                        vk_photo_url VARCHAR NOT NULL
                         );
                         """)
             conn.commit()
@@ -61,25 +63,24 @@ def add_photo(user_id, photo_url, photo_likes):
     conn.close()
 
 
-def add_favorite(favorite_id):
+def add_favorite(user_main, favorite_id, photo_url):
     with psycopg2.connect(database=database, user=user, password=password) as conn:
         with conn.cursor() as cur:
-            user_id = favorite_id
             cur.execute("""
-                        INSERT INTO vk_favorite(vk_user_id) VALUES
-                        (%s)
+                        INSERT INTO vk_favorite(vk_user_main, vk_user_id, vk_photo_url) VALUES
+                        (%s, %s, %s)
                         RETURNING favorite_id, vk_user_id;
-                        """, (user_id,))
+                        """, (user_main, favorite_id, photo_url,))
             conn.commit()
     conn.close()
 
-def select_photo(number_photo):
+def select_photo(user_id):
     with psycopg2.connect(database=database, user=user, password=password) as conn:
         with conn.cursor() as cur:
             cur.execute("""
                         SELECT photo_link FROM vk_photo
-                        WHERE photo_id = %s;
-                        """, (number_photo,))
+                        WHERE vk_user_id = %s;
+                        """, (user_id,))
             photo_data = cur.fetchall()
     conn.close()
     return photo_data
@@ -106,3 +107,34 @@ def select_user_count():
             user_data = cur.fetchall()
     conn.close()
     return user_data
+
+
+def select_favorite_user(number_photo):
+    with psycopg2.connect(database=database, user=user, password=password) as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT vk_user_id, vk_photo_url FROM vk_favorite
+                        WHERE favorite_id = %s;
+                        """, (number_photo,))
+            user_data = cur.fetchall()
+    conn.close()
+    return user_data
+
+
+def select_user_favorite_count():
+    with psycopg2.connect(database=database, user=user, password=password) as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        SELECT * FROM vk_favorite;
+                        """)
+            user_data = cur.fetchall()
+    conn.close()
+    return user_data
+
+def delete_favorite(number_id):
+    with psycopg2.connect(database=database, user=user, password=password) as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                        DELETE FROM vk_favorite WHERE favorite_id = %s; 
+                        """, (number_id,))
+    conn.close()

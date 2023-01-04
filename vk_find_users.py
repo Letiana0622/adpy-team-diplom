@@ -15,7 +15,7 @@ class VkBotFunc:
         self.params_search = {'access_token': self.token_user, 'v': self.version}
         self.url_get = 'https://api.vk.com/method/users.get'
         self.url_search = 'https://api.vk.com/method/users.search'
-        self.user_fields = 'city, sex, bdate'
+        self.user_fields = 'city, sex, bdate, can_write_private_message, has_photo'
 
     def user_info(self):
         params = {'user_ids': self.id, 'fields': self.user_fields}
@@ -48,19 +48,20 @@ class VkBotFunc:
         for users_data in list_users_data[0]['response']['items']:
             list_users_selection.append(users_data)
             vk_user_id = users_data['id']
-            add_user(vk_user_id)
-            user_id = users_data['id']  # User id is to be taken from DB when DB is ready
-            url = 'https://api.vk.com/method/photos.get'
-            params = {'owner_id': user_id,
-                      'album_id': 'profile',
-                      'access_token': self.token_user,
-                      'v': '5.131',
-                      'extended': '1',
-                      'offset': offset
-                      }
-            res = requests.get(url=url, params=params).json()
-            time.sleep(0.2)
-            photos_data.append(res)
+            if users_data['can_access_closed'] == True and users_data['has_photo'] == 1:
+                add_user(vk_user_id)
+                user_id = users_data['id']  # User id is to be taken from DB when DB is ready
+                url = 'https://api.vk.com/method/photos.get'
+                params = {'owner_id': user_id,
+                          'album_id': 'profile',
+                          'access_token': self.token_user,
+                          'v': '5.131',
+                          'extended': '1',
+                          'offset': offset,
+                          }
+                res = requests.get(url=url, params=params).json()
+                time.sleep(0.2)
+                photos_data.append(res)
         for response in photos_data:
             try:
                 if response['response']['count'] != 0:
