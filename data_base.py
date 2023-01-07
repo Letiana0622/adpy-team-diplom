@@ -130,11 +130,3 @@ def select_user_favorite_count():
             user_data = cur.fetchall()
     conn.close()
     return user_data
-
-def delete_favorite(number_id):
-    with psycopg2.connect(database=database, user=user, password=password) as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                        DELETE FROM vk_favorite WHERE favorite_id = %s; 
-                        """, (number_id,))
-    conn.close()

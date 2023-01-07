@@ -7,7 +7,7 @@ from vk_find_users import VkBotFunc
 import requests
 from io import BytesIO
 from vk_api.upload import VkUpload
-from data_base import add_favorite, select_photo, select_user, select_user_count, select_favorite_user, select_user_favorite_count, delete_favorite
+from data_base import add_favorite, select_photo, select_user, select_user_count, select_favorite_user, select_user_favorite_count
 
 
 token = bot_token
@@ -50,7 +50,6 @@ def keyboard_start():
     keyboard_main = VkKeyboard()
     keyboard_main.add_button('Hi', VkKeyboardColor.PRIMARY)
     keyboard_main.add_button('Photo', VkKeyboardColor.PRIMARY)
-    keyboard_main.add_button('Find', VkKeyboardColor.PRIMARY)
     keyboard_main.add_button('Favorite', VkKeyboardColor.PRIMARY)
     keyboard_main.add_button('Continue', VkKeyboardColor.PRIMARY)
     return keyboard_main
@@ -138,8 +137,6 @@ for event in longpoll.listen():
             keyboard_start()
             if request == 'hi':
                 write_msg(event.user_id, f'Хай, {event.user_id}')
-            elif request == 'bye':
-                write_msg(event.user_id, 'Пока((')
             elif request == 'photo':
                 data_research()
                 start_photo = 1
@@ -206,8 +203,5 @@ for event in longpoll.listen():
                 write_msg(event.user_id, f'https://vk.com/{nickname["response"][0]["domain"]}')
                 new_photo = photo_upload(person_data[0][1])
                 send_photo(event.user_id, new_photo[0], new_photo[1], new_photo[2], keyboard_favorite_photo_vk())
-            elif request == 'delete favorite':
-                delete_favorite(number_favorite_photo)
-                write_msg(event.user_id, 'Успешно удаленно из избранного')
             else:
                 write_msg(event.user_id, 'Не поняла вашего ответа. Вот список команд', keyboard_start())
